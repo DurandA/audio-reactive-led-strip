@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import unicode_literals
 from __future__ import absolute_import
 import time
+from itertools import islice
 import numpy as np
 
 _GAMMA_TABLE = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
@@ -273,6 +274,34 @@ class DotStar(LEDController):
         bgr = [2,1,0]
         self.led_data[0:,1:4] = pixels[bgr].T.clip(0,255)
         self.strip.show()
+
+
+class XTerm256Strip(LEDController):
+
+    # Default color levels for the color cube
+    cubelevels = [0x00, 0x5f, 0x87, 0xaf, 0xd7, 0xff]
+    # Generate a list of midpoints of the above list
+    snaps = [(x+y)/2 for x, y in islice(zip(cubelevels, [0]+cubelevels),1)]
+
+    def rgb2short(self, r, g, b):
+        """ Converts RGB values to the nearest equivalent xterm-256 color.
+        """
+        # Using list of snap points, convert RGB value to cube indexes
+        r, g, b = map(lambda x: len(tuple(s for s in self.snaps if s<x)), (r, g, b))
+        # Simple colorcube transform
+        return r*36 + g*6 + b + 16
+
+
+    def show(self, pixels):
+        """Display a virtual strip on the terminal
+
+        The terminal will output 'FULL BLOCK' characters using XTerm256 colors.
+        """
+        pixels = pixels.T.clip(0, 255).astype(int)
+        for idx, pixel in enumerate(pixels):
+            xcolor = self.rgb2short(*pixel)
+            print("\033[38;5;%im\u2588\033[0m" % xcolor, end='')
+        print ('', end="\r", flush=True)
 
 
 # # Execute this file to run a LED strand test

@@ -304,6 +304,28 @@ class XTerm256Strip(LEDController):
         print ('', end="\r", flush=True)
 
 
+class CursesStrip(XTerm256Strip):
+
+    def __init__(self, win=None):
+        """Initializes a virtual strip with curses window"""
+        global curses
+        import curses
+        self.win = win
+
+    def show(self, pixels):
+        """Display a virtual strip on the terminal
+
+        The terminal will output 'FULL BLOCK' characters using curses.
+        """
+        self.win.clear()
+        pixels = pixels.T.clip(0, 255).astype(int)
+        height,width = self.win.getmaxyx()
+        for idx, pixel in enumerate(pixels):
+            xcolor = self.rgb2short(*pixel)
+            self.win.addstr(idx//width, idx%width, u'\u2588', curses.color_pair(xcolor))
+        self.win.refresh()
+
+
 # # Execute this file to run a LED strand test
 # # If everything is working, you should see a red, green, and blue pixel scroll
 # # across the LED strip continously
